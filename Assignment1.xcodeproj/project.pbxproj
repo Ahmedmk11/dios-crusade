@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		DE99FC3F2AD9BF41006E7AB1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DE99FC3E2AD9BF41006E7AB1 /* main.cpp */; };
+		DE99FC472AD9C39D006E7AB1 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE99FC462AD9C39D006E7AB1 /* OpenGL.framework */; };
+		DE99FC492AD9C3A1006E7AB1 /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE99FC482AD9C3A1006E7AB1 /* GLUT.framework */; };
+		DE99FC4D2ADC4708006E7AB1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE99FC4C2ADC4708006E7AB1 /* Cocoa.framework */; };
+		DE99FC982AE095AE006E7AB1 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE99FC972AE095AE006E7AB1 /* OpenAL.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,7 +28,18 @@
 
 /* Begin PBXFileReference section */
 		DE99FC3B2AD9BF41006E7AB1 /* Assignment1 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Assignment1; sourceTree = BUILT_PRODUCTS_DIR; };
-		DE99FC3E2AD9BF41006E7AB1 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		DE99FC3E2AD9BF41006E7AB1 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		DE99FC462AD9C39D006E7AB1 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		DE99FC482AD9C3A1006E7AB1 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
+		DE99FC4C2ADC4708006E7AB1 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		DE99FC972AE095AE006E7AB1 /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
+		DE99FC9D2AE09CFF006E7AB1 /* zawarudo.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = zawarudo.wav; sourceTree = "<group>"; };
+		DEF69BE82AE274810057A919 /* giorno's_theme.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = "giorno's_theme.wav"; sourceTree = "<group>"; };
+		DEF69BE92AE283340057A919 /* to_be_continued.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = to_be_continued.wav; sourceTree = "<group>"; };
+		DEF69BEA2AE2A3D00057A919 /* ding.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = ding.wav; sourceTree = "<group>"; };
+		DEF69BEB2AE2AD140057A919 /* hurt.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = hurt.wav; sourceTree = "<group>"; };
+		DEF69BEC2AE2ADF30057A919 /* col.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = col.wav; sourceTree = "<group>"; };
+		DEF69BED2AE30DD00057A919 /* pillermen.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = pillermen.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -32,6 +47,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DE99FC982AE095AE006E7AB1 /* OpenAL.framework in Frameworks */,
+				DE99FC492AD9C3A1006E7AB1 /* GLUT.framework in Frameworks */,
+				DE99FC472AD9C39D006E7AB1 /* OpenGL.framework in Frameworks */,
+				DE99FC4D2ADC4708006E7AB1 /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,6 +62,7 @@
 			children = (
 				DE99FC3D2AD9BF41006E7AB1 /* Assignment1 */,
 				DE99FC3C2AD9BF41006E7AB1 /* Products */,
+				DE99FC452AD9C39D006E7AB1 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -57,9 +77,35 @@
 		DE99FC3D2AD9BF41006E7AB1 /* Assignment1 */ = {
 			isa = PBXGroup;
 			children = (
+				DE99FC942AE08FBC006E7AB1 /* assets */,
 				DE99FC3E2AD9BF41006E7AB1 /* main.cpp */,
 			);
 			path = Assignment1;
+			sourceTree = "<group>";
+		};
+		DE99FC452AD9C39D006E7AB1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				DE99FC972AE095AE006E7AB1 /* OpenAL.framework */,
+				DE99FC4C2ADC4708006E7AB1 /* Cocoa.framework */,
+				DE99FC482AD9C3A1006E7AB1 /* GLUT.framework */,
+				DE99FC462AD9C39D006E7AB1 /* OpenGL.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		DE99FC942AE08FBC006E7AB1 /* assets */ = {
+			isa = PBXGroup;
+			children = (
+				DEF69BED2AE30DD00057A919 /* pillermen.wav */,
+				DEF69BEC2AE2ADF30057A919 /* col.wav */,
+				DEF69BEB2AE2AD140057A919 /* hurt.wav */,
+				DEF69BEA2AE2A3D00057A919 /* ding.wav */,
+				DEF69BE92AE283340057A919 /* to_be_continued.wav */,
+				DEF69BE82AE274810057A919 /* giorno's_theme.wav */,
+				DE99FC9D2AE09CFF006E7AB1 /* zawarudo.wav */,
+			);
+			path = assets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -178,6 +224,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -233,6 +280,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "";
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.5;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -245,6 +293,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = "/opt/homebrew/Cellar/libsndfile/1.2.2/include/**";
+				LIBRARY_SEARCH_PATHS = "/opt/homebrew/Cellar/libsndfile/1.2.2/lib/**";
+				OTHER_LDFLAGS = "-lsndfile";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -253,6 +304,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				HEADER_SEARCH_PATHS = "/opt/homebrew/Cellar/libsndfile/1.2.2/include/**";
+				LIBRARY_SEARCH_PATHS = "/opt/homebrew/Cellar/libsndfile/1.2.2/lib/**";
+				OTHER_LDFLAGS = "-lsndfile";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
