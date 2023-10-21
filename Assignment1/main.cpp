@@ -8,66 +8,66 @@
 #include <chrono>
 #include <vector>
 #include <algorithm>
-#include <OpenAL/al.h>
-#include <OpenAL/alc.h>
-#include <sndfile.h>
 #include <string>
 #include <mutex>
 #include <thread>
-
-int music = -1;
-int effect = -1;
-std::mutex musicMutex;
-std::mutex effectsMutex;
-
-float objectX = 500.0f;
-float objectY = 300.0f;
-float playerRotation = 0.0f;
+#include <SDL.h>
+#include <SDL_mixer.h>
 
 std::default_random_engine generator(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
 std::default_random_engine generatorX(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count() + 1000));
 std::default_random_engine generatorY(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
-
-std::vector<std::array<float, 2>> takenCenters;
-
-std::vector<std::array<float, 2>> collectibles;
-std::vector<std::array<float, 2>> obstacles;
-std::vector<std::array<float, 3>> powerUps;
+std::default_random_engine generatorStarsNum(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count() + 3000));
+std::default_random_engine generatorStarsX(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count() + 4000));
+std::default_random_engine generatorStarsY(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count() + 5000));
 
 struct Time {
     int minutes;
     int seconds;
 };
 
-bool notTerminated = true;
+std::vector<std::array<float, 2>> takenCenters;
+
+std::vector<std::array<float, 2>> collectibles;
+std::vector<std::array<float, 2>> obstacles;
+std::vector<std::array<float, 3>> powerUps;
+std::vector<std::array<float, 2>> stars;
+std::vector<std::string> audioFilesNames;
+
+int direction = 1;
+int direction2 = 1;
 bool once = false;
+bool once2 = false;
 bool goalEffect = true;
 bool gameRunning = true;
-ALuint sourceMusic = 0;
-ALuint sourceEffect = 1;
-std::vector<ALuint> audioBuffers;
 bool gameover = false;
 bool won = false;
 int healthPoints = 5;
 int score = 0;
 int scoreIncrease = 1;
-int timeRemaining = 20;
+int timeRemaining = 45;
 Time displayedTime;
 bool isTimeStopped = false;
 int timeStopDuration = 10;
-int doubleScoreDuration = 25;
+int doubleScoreDuration = 15;
 bool isDoubleScoreActive = false;
 int colCount = 5;
-
+float objectX = 500.0f;
+float objectY = 300.0f;
+float playerRotation = 0.0f;
+float colRotation = 0.0f;
+float ObstacleRotation = 0.0f;
+float earthRotation1 = 0.0f;
+float earthRotation2 = 0.0f;
+float removed = 0.0f;
+float removed2 = 0.0f;
+float twinkleLength = 10.0f;
 bool isRandom = false;
 int fn = 1;
+float eyeColor = 0.0f;
+bool isTakingDamage = false;
+int damageDelay = 5;
 
-void audioThreadFunc();
-bool initializeOpenAL();
-void cleanupOpenAL();
-bool loadAudioFilesToBuffers(const std::vector<std::string>& filenames);
-void playMusic(int index);
-void playEffects(int index);
 void print(int x, int y, char* string);
 Time secondsToMinutesAndSeconds(int totalSeconds);
 void timer(int value);
@@ -95,227 +95,6 @@ void displayDoubleScore(float centerX, float centerY, float radius);
 void randomize();
 void displayBoundaries();
 void Display();
-
-void musicThreadFunc() {
-    int index = -1;
-    while (true) {
-        {
-            std::lock_guard<std::mutex> lock(musicMutex);
-            if (music != -1) {
-                index = music;
-                music = -1;
-            }
-        }
-        if (index != -1) {
-            std::cout << "sourceMusic" << sourceMusic << std::endl;
-            playMusic(index);
-            index = -1;
-        }
-        if (music == 2 || music == 3) {
-            alSourceStop(0);
-            break;
-        }
-    }
-}
-
-void effectsThreadFunc() {
-    int index = -1;
-    while (true) {
-        {
-            std::lock_guard<std::mutex> lock(effectsMutex);
-            if (effect != -1) {
-                index = effect;
-                effect = -1;
-            }
-        }
-        if (index != -1) {
-            std::cout << "sourceEffect" << sourceEffect << std::endl;
-            playEffects(index);
-            index = -1;
-        }
-    }
-}
-
-bool initializeOpenAL() {
-    ALCdevice* device = alcOpenDevice(NULL);
-    if (!device) {
-        std::cerr << "Failed to open audio device" << std::endl;
-        return false;
-    }
-
-    ALCcontext* context = alcCreateContext(device, NULL);
-    if (!context) {
-        std::cerr << "Failed to create audio context" << std::endl;
-        alcCloseDevice(device);
-        return false;
-    }
-
-    alcMakeContextCurrent(context);
-
-    return true;
-}
-
-void cleanupOpenAL() {
-    ALCcontext* context = alcGetCurrentContext();
-    ALCdevice* device = alcGetContextsDevice(context);
-
-    alcMakeContextCurrent(NULL);
-    alcDestroyContext(context);
-    alcCloseDevice(device);
-}
-
-bool loadAudioFilesToBuffers(const std::vector<std::string>& filenames) {
-    ALCdevice* device = alcOpenDevice(NULL);
-    if (!device) {
-        std::cerr << "Failed to open audio device" << std::endl;
-        return false;
-    }
-
-    ALCcontext* context = alcCreateContext(device, NULL);
-    if (!context) {
-        std::cerr << "Failed to create audio context" << std::endl;
-        alcCloseDevice(device);
-        return false;
-    }
-
-    alcMakeContextCurrent(context);
-
-    for (const std::string& filename : filenames) {
-        ALuint buffer;
-        alGenBuffers(1, &buffer);
-
-        SF_INFO sfinfo;
-        SNDFILE* sndfile = sf_open(filename.c_str(), SFM_READ, &sfinfo);
-        if (!sndfile) {
-            std::cerr << "Failed to open audio file: " << filename << std::endl;
-            alcMakeContextCurrent(NULL);
-            alcDestroyContext(context);
-            alcCloseDevice(device);
-            return false;
-        }
-        
-        ALenum format;
-        if (sfinfo.channels == 1) {
-            format = AL_FORMAT_MONO16;
-        } else if (sfinfo.channels == 2) {
-            format = AL_FORMAT_STEREO16;
-        } else {
-            std::cerr << "Unsupported number of audio channels" << std::endl;
-            sf_close(sndfile);
-            alcMakeContextCurrent(NULL);
-            alcDestroyContext(context);
-            alcCloseDevice(device);
-            return false;
-        }
-
-        ALsizei dataSize = static_cast<ALsizei>(sfinfo.frames) * sfinfo.channels * sizeof(short);
-        short* data = new short[dataSize];
-        sf_readf_short(sndfile, data, sfinfo.frames);
-        sf_close(sndfile);
-
-        alBufferData(buffer, format, data, dataSize, sfinfo.samplerate);
-
-        delete[] data;
-
-        audioBuffers.push_back(buffer);
-    }
-
-    alcMakeContextCurrent(NULL);
-    alcDestroyContext(context);
-    alcCloseDevice(device);
-
-    return true;
-}
-
-void playMusic(int index) {
-    if (index >= 0 && index < audioBuffers.size()) {
-        ALCdevice* device = alcOpenDevice(NULL);
-
-        if (!device) {
-            std::cerr << "Failed to open audio device" << std::endl;
-            return;
-        }
-
-        // Unqueue and stop the current source
-        if (alIsSource(sourceMusic)) {
-            ALint queued;
-            alGetSourcei(sourceMusic, AL_BUFFERS_QUEUED, &queued);
-            while (queued--) {
-                ALuint buffer;
-                alSourceUnqueueBuffers(sourceMusic, 1, &buffer);
-            }
-            alSourceStop(sourceMusic);
-        }
-
-        ALCcontext* context = alcCreateContext(device, NULL);
-
-        if (!context) {
-            std::cerr << "Failed to create audio context" << std::endl;
-            alcCloseDevice(device);
-            return;
-        }
-
-        alcMakeContextCurrent(context);
-        alGenSources(1, &sourceMusic);
-        alSourcei(sourceMusic, AL_BUFFER, audioBuffers[index]);
-        alSourcePlay(sourceMusic);
-        alSourcef(sourceMusic, AL_GAIN, 0.08f);
-        ALint sourceState;
-
-        do {
-            alGetSourcei(sourceMusic, AL_SOURCE_STATE, &sourceState);
-        } while (sourceState == AL_PLAYING);
-        
-    } else {
-        std::cerr << "Invalid audio index: " << index << std::endl;
-    }
-}
-
-void playEffects(int index) {
-    if (index >= 0 && index < audioBuffers.size()) {
-        ALCdevice* device = alcOpenDevice(NULL);
-
-        if (!device) {
-            std::cerr << "Failed to open audio device" << std::endl;
-            return;
-        }
-
-        // Unqueue and stop the current source
-        if (alIsSource(sourceEffect)) {
-            ALint queued;
-            alGetSourcei(sourceEffect, AL_BUFFERS_QUEUED, &queued);
-            while (queued--) {
-                ALuint buffer;
-                alSourceUnqueueBuffers(sourceEffect, 1, &buffer);
-            }
-            alSourceStop(sourceEffect);
-        }
-
-        ALCcontext* context = alcCreateContext(device, NULL);
-
-        if (!context) {
-            std::cerr << "Failed to create audio context" << std::endl;
-            alcCloseDevice(device);
-            return;
-        }
-
-        alcMakeContextCurrent(context);
-        alGenSources(1, &sourceEffect);
-        alSourcei(sourceEffect, AL_BUFFER, audioBuffers[index]);
-        alSourcePlay(sourceEffect);
-        alSourcef(sourceEffect, AL_GAIN, 1.0f);
-        ALint sourceState;
-
-        do {
-            alGetSourcei(sourceEffect, AL_SOURCE_STATE, &sourceState);
-        } while (sourceState == AL_PLAYING);
-
-    } else {
-        std::cerr << "Invalid audio index: " << index << std::endl;
-    }
-}
-
-
 
 void print(int x, int y, char* string, int font) {
     int len, i;
@@ -430,10 +209,6 @@ void goalReached() {
         text = "You Won!";
     } else if (score > colCount) {
         text = "Outstanding!";
-    } else if (score < colCount && score != 0) {
-        text = "Good Enough..";
-    } else if (score == 0) {
-        text = "Meh.";
     }
     
     int textWidth = glutBitmapLength(GLUT_BITMAP_TIMES_ROMAN_24, (const unsigned char*)text.c_str());
@@ -485,15 +260,24 @@ void playerDied() {
 }
 
 void stopTime() {
-    alSourceStop(sourceEffect);
-    {
-        std::lock_guard<std::mutex> lock(effectsMutex);
-        effect = 0;
+    Mix_Chunk* soundEffect = Mix_LoadWAV(audioFilesNames.at(0).c_str());
+    if (!soundEffect) {
+        std::cerr << "Sound effect not loaded" << std::endl;
     }
+
+    Mix_PlayChannel(2, soundEffect, 0);
+    Mix_Volume(2, 128);
     isTimeStopped = true;
 }
 
 void doubleScore() {
+    Mix_Chunk* soundEffect = Mix_LoadWAV(audioFilesNames.at(6).c_str());
+    if (!soundEffect) {
+        std::cerr << "Sound effect not loaded" << std::endl;
+    }
+
+    Mix_PlayChannel(2, soundEffect, 0);
+    Mix_Volume(2, 128);
     isDoubleScoreActive = true;
     scoreIncrease = 2;
 }
@@ -526,7 +310,7 @@ void playerCollide() {
         bool isPowRemoved = false;
 
         if (collisionX && collisionY) {
-            if (takenCenter[0] == 50 && takenCenter[1] == 550) {
+            if (takenCenter[0] == 50 && takenCenter[1] == 550 && score >= colCount) {
                 won = true;
             }
             isColRemoved = removeFloat2Array(collectibles, takenCenter);
@@ -553,18 +337,23 @@ void playerCollide() {
             }
             if (isColRemoved) {
                 score += scoreIncrease;
-                alSourceStop(sourceEffect);
-                {
-                    std::lock_guard<std::mutex> lock(effectsMutex);
-                    effect = 5;
+                Mix_Chunk* soundEffect = Mix_LoadWAV(audioFilesNames.at(5).c_str());
+                if (!soundEffect) {
+                    std::cerr << "Sound effect not loaded" << std::endl;
                 }
+
+                Mix_PlayChannel(2, soundEffect, 0);
+                Mix_Volume(2, 128);
             } else if (isObsRemoved) {
                 healthPoints --;
-//                alSourceStop(sourceEffect);
-//                {
-//                    std::lock_guard<std::mutex> lock(effectsMutex);
-//                    effect = 4;
-//                }
+                isTakingDamage = true;
+                Mix_Chunk* soundEffect = Mix_LoadWAV(audioFilesNames.at(4).c_str());
+                if (!soundEffect) {
+                    std::cerr << "Sound effect not loaded" << std::endl;
+                }
+
+                Mix_PlayChannel(2, soundEffect, 0);
+                Mix_Volume(2, 128);
             }
             removeFloat2Array(takenCenters, takenCenter);
         }
@@ -648,7 +437,7 @@ void displayDurations() {
         secs2 = std::to_string(doubleScoreDuration);
     }
     
-    std::string text1 = "The World: ";
+    std::string text1 = "Time Stop: ";
     std::string text1Secs = secs1 + "s";
     int text1Width = glutBitmapLength(GLUT_BITMAP_HELVETICA_12, (const unsigned char*)text1.c_str());
     
@@ -710,41 +499,143 @@ void displayGoal() {
     }
     glEnd();
     
+    glPushMatrix();
+    glTranslatef(earthRotation1, 0.0, 0.0);
+    
     glColor3f(0.0f, 1.0f, 0.0f);
     
     // Continent 1
-    glBegin(GL_QUADS);
-    glVertex2f(centerX, centerY - 10);
-    glVertex2f(centerX, centerY);
-    glVertex2f(centerX + 7.5, centerY);
-    glVertex2f(centerX + 7.5, centerY - 10);
-    glEnd();
+    if (centerX + earthRotation1 + removed < centerX + 20) {
+        glBegin(GL_QUADS);
+        glVertex2f(centerX + removed, centerY - 10);
+        glVertex2f(centerX + removed, centerY);
+        glVertex2f(centerX + 7.5, centerY);
+        glVertex2f(centerX + 7.5, centerY - 10);
+        glEnd();
+    } else {
+        removed = 0.0f;
+        earthRotation1 = 0.0f;
+    }
+    
+    glPopMatrix();
+    
+    glPushMatrix();
+    glTranslatef(earthRotation2, 0.0, 0.0);
     
     // Continent 2
-    glBegin(GL_TRIANGLES);
-    glVertex2f(centerX - 5 - 6, centerY + 10);
-    glVertex2f(centerX - 6, centerY - 5 + 10);
-    glVertex2f(centerX + 5 - 6, centerY + 10);
-    glEnd();
+    if (centerX + earthRotation2 + removed2 - 12 < centerX + 20) {
+        glBegin(GL_QUADS);
+        glVertex2f(centerX - 12 + removed2, centerY + 12);
+        glVertex2f(centerX - 12 + removed2, centerY + 5);
+        glVertex2f(centerX + 12, centerY + 5);
+        glVertex2f(centerX + 12, centerY + 12);
+        glEnd();
+    } else {
+        removed2 = 0.0f;
+        earthRotation2 = 0.0f;
+    }
     
-    // Continent 3
-    glColor3f(0.6f, 0.4f, 0.2f);
-    glPointSize(7.0);
-    glBegin(GL_POINTS);
-    glVertex2f(centerX + 8, centerY + 8);
-    glEnd();
+    glPopMatrix();
     
-    // Ring
-    glColor3f(1.0f, 1.0f, 1.0f);
+    float a;
+    float b;
+
+    // Ring 1
+    a = 30.0;
+    b = 15.0;
+    glColor3f(0.5686f, 0.4314f, 0.3059f);
     glBegin(GL_LINE_LOOP);
-    int numRingSegments = 50;
-    for (int i = 0; i < numRingSegments; i++) {
-        float angle = i * 2 * 3.14159265 / numRingSegments;
-        float x = centerX + 18 * cos(angle);
-        float y = centerY + 18 * sin(angle);
+    for (int i = 0; i < numSegments; i++) {
+        float angle = 2.0 * M_PI * i / numSegments;
+        float x = centerX + a * cos(angle);
+        float y = centerY + b * sin(angle);
+        if (y <= centerY - 13) {
+            glColor3f(0.0f, 0.2f, 1.0f);
+        }
+        glVertex2f(x, y);
+        glColor3f(0.5686f, 0.4314f, 0.3059f);
+    }
+    glEnd();
+    
+    // Ring 1
+    a = 34.0;
+    b = 19.0;
+    glColor3f(0.5686f, 0.4314f, 0.3059f);
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < numSegments; i++) {
+        float angle = 2.0 * M_PI * i / numSegments;
+        float x = centerX + a * cos(angle);
+        float y = centerY + b * sin(angle);
+        glVertex2f(x, y);
+        glColor3f(0.5686f, 0.4314f, 0.3059f);
+    }
+    glEnd();
+    
+    glPopMatrix();
+
+}
+
+void drawStar(float xCenter, float yCenter) {
+    float radius = 2.0f;
+    int numSegments = 100;
+    
+    glColor3f(0.0, 0.0, 0.0);
+    glLineWidth(0.4);
+    
+    glBegin(GL_POLYGON);
+    for (int i = 0; i <= numSegments; i++) {
+        float angle = i * 2 * 3.14159265 / numSegments;
+        float x = xCenter + radius * 2 * cos(angle);
+        float y = yCenter + radius * 2 * sin(angle);
         glVertex2f(x, y);
     }
     glEnd();
+    
+    // top
+    glBegin(GL_TRIANGLES);
+    glVertex2f(xCenter - radius, yCenter);
+    glVertex2f(xCenter + radius, yCenter);
+    glVertex2f(xCenter, yCenter - twinkleLength);
+    glEnd();
+    // bottom
+    glBegin(GL_TRIANGLES);
+    glVertex2f(xCenter - radius, yCenter);
+    glVertex2f(xCenter + radius, yCenter);
+    glVertex2f(xCenter, yCenter + twinkleLength);
+    glEnd();
+    // left
+    glBegin(GL_TRIANGLES);
+    glVertex2f(xCenter, yCenter - radius);
+    glVertex2f(xCenter, yCenter + radius);
+    glVertex2f(xCenter - twinkleLength, yCenter);
+    glEnd();
+    // right
+    glBegin(GL_TRIANGLES);
+    glVertex2f(xCenter, yCenter - radius);
+    glVertex2f(xCenter, yCenter + radius);
+    glVertex2f(xCenter + twinkleLength, yCenter);
+    glEnd();
+}
+
+
+void randomizeStars() {
+    int min = 12;
+    int max = 20;
+    float minCordX = 125.0f;
+    float maxCordX = 980.0f;
+    float minCordY = 68.5f;
+    float maxCordY = 570.0f;
+    std::uniform_int_distribution<int> dist(min, max);
+    std::uniform_real_distribution<float> xCord(minCordX, maxCordX);
+    std::uniform_real_distribution<float> yCord(minCordY, maxCordY);
+    
+    int numStars = dist(generatorStarsNum);
+
+    for (int i = 0; i < numStars; i++) {
+        float x = xCord(generatorStarsX);
+        float y = yCord(generatorStarsY);
+        stars.push_back({x, y});
+    }
 }
 
 void displayPlayer() {
@@ -757,49 +648,21 @@ void displayPlayer() {
     float centerX = 0.0f;
     float centerY = 0.0f;
 
-    glColor3f(0.9255f, 0.6824f, 0.4784f);
+    if (isTakingDamage) {
+        if (damageDelay <= 0) {
+            isTakingDamage = false;
+        } else {
+            damageDelay --;
+        }
+        glColor3f(220.0 / 255.0, 74.0 / 255.0, 59.0 / 255.0);
+    } else {
+        glColor3f(0.9255f, 0.6824f, 0.4784f);
+    }
     glBegin(GL_QUADS);
     glVertex2f(centerX - 40.0, centerY - 20.0);
     glVertex2f(centerX + 40.0, centerY - 20.0);
     glVertex2f(centerX + 40.0, centerY + 40.0);
     glVertex2f(centerX - 40.0, centerY + 40.0);
-    glEnd();
-
-    glColor3f(208 / 255.0, 160 / 255.0, 69 / 255.0);
-
-    // Left triangle
-    glBegin(GL_TRIANGLES);
-    glVertex2f(centerX - 40.0, centerY - 20.0);
-    glVertex2f(centerX - 30.0, centerY - 40.0);
-    glVertex2f(centerX - 20.0, centerY - 20.0);
-    glEnd();
-
-    // Middle triangle
-    glBegin(GL_TRIANGLES);
-    glVertex2f(centerX - 20.0, centerY - 20.0);
-    glVertex2f(centerX, centerY - 50.0);
-    glVertex2f(centerX + 20, centerY - 20.0);
-    glEnd();
-
-    // Right triangle
-    glBegin(GL_TRIANGLES);
-    glVertex2f(centerX + 20.0, centerY - 20.0);
-    glVertex2f(centerX + 30.0, centerY - 40.0);
-    glVertex2f(centerX + 40.0, centerY - 20.0);
-    glEnd();
-
-    // Left top triangle
-    glBegin(GL_TRIANGLES);
-    glVertex2f(centerX - 30.0, centerY - 20.0);
-    glVertex2f(centerX - 20.0, centerY - 45.0);
-    glVertex2f(centerX - 10.0, centerY - 20.0);
-    glEnd();
-
-    // right top triangle
-    glBegin(GL_TRIANGLES);
-    glVertex2f(centerX + 10.0, centerY - 20.0);
-    glVertex2f(centerX + 20.0, centerY - 45.0);
-    glVertex2f(centerX + 30.0, centerY - 20.0);
     glEnd();
 
     glColor3f(1.0f, 1.0f, 1.0f);
@@ -826,7 +689,13 @@ void displayPlayer() {
 
     glEnd();
 
-    glColor3f(1.0f, 0.0f, 0.0f);
+    if (isTimeStopped || isDoubleScoreActive || won) {
+        eyeColor = 1.0f;
+    } else {
+        eyeColor = 0.0f;
+    }
+    
+    glColor3f(eyeColor, 0.0f, 0.0f);
 
     // Left eye
     glBegin(GL_POLYGON);
@@ -885,55 +754,113 @@ void displayPlayer() {
     glVertex2f((centerX + 20) + 10, centerY + 20 - 25.0);
     glEnd();
 
+    if (isTimeStopped || isDoubleScoreActive || won) {
+        glColor3f(0.7, 0.5, 0.2);
+        
+        // Middle left triangle
+        glBegin(GL_TRIANGLES);
+        glVertex2f(centerX - 20.0, centerY - 20.0);
+        glVertex2f(centerX - 10.0, centerY - 48.0);
+        glVertex2f(centerX, centerY - 20.0);
+        glEnd();
+        
+        // Middle right triangle
+        glBegin(GL_TRIANGLES);
+        glVertex2f(centerX + 20.0, centerY - 20.0);
+        glVertex2f(centerX + 10.0, centerY - 48.0);
+        glVertex2f(centerX, centerY - 20.0);
+        glEnd();
+        
+    } else {
+        glColor3f(0.81568627451, 0.62745098039, 0.27058823529);
+    }
+    // Left triangle
+    glBegin(GL_TRIANGLES);
+    glVertex2f(centerX - 40.0, centerY - 20.0);
+    glVertex2f(centerX - 30.0, centerY - 40.0);
+    glVertex2f(centerX - 20.0, centerY - 20.0);
+    glEnd();
+
+    // Middle triangle
+    glBegin(GL_TRIANGLES);
+    glVertex2f(centerX - 20.0, centerY - 20.0);
+    glVertex2f(centerX, centerY - 50.0);
+    glVertex2f(centerX + 20, centerY - 20.0);
+    glEnd();
+
+    // Right triangle
+    glBegin(GL_TRIANGLES);
+    glVertex2f(centerX + 20.0, centerY - 20.0);
+    glVertex2f(centerX + 30.0, centerY - 40.0);
+    glVertex2f(centerX + 40.0, centerY - 20.0);
+    glEnd();
+    
+    // Left top triangle
+    glBegin(GL_TRIANGLES);
+    glVertex2f(centerX - 30.0, centerY - 20.0);
+    glVertex2f(centerX - 20.0, centerY - 45.0);
+    glVertex2f(centerX - 10.0, centerY - 20.0);
+    glEnd();
+
+    // right top triangle
+    glBegin(GL_TRIANGLES);
+    glVertex2f(centerX + 10.0, centerY - 20.0);
+    glVertex2f(centerX + 20.0, centerY - 45.0);
+    glVertex2f(centerX + 30.0, centerY - 20.0);
+    glEnd();
     
     glPopMatrix();
 }
 
 void displayCollectible(float centerX, float centerY, float radius) {
+    glPushMatrix();
+    glTranslatef(centerX, centerY, 0.0f);
+    glRotatef(colRotation, 0.0f, 0.1f, 1.0f);
+    glTranslatef(-centerX, -centerY, 0.0f);
     int numSegments = 100;
 
     glLineWidth(2.0);
     
     glColor3f(1.0f, 0.0f, 0.0f);
+    
+    // outline
     glBegin(GL_LINE_LOOP);
-
     for (int i = 0; i <= numSegments; i++) {
         float angle = i * 2 * 3.14159265 / numSegments;
         float x = centerX + radius * 2 * cos(angle);
         float y = centerY - radius * 2 * sin(angle);
         glVertex2f(x, y);
     }
-
     glEnd();
 
+    // Semicircle
     glBegin(GL_POLYGON);
-
-    for (int i = 0; i <= numSegments; i++) {
-        float angle = i * 2 * 3.14159265 / numSegments;
+    for (int i = 0; i <= 180; i++) {
+        float angle = i * M_PI / 180.0;
         float x = centerX + radius * cos(angle);
-        float y = centerY + 10 - radius * sin(angle);
-        glVertex2f(x, y);
+        float y = centerY + radius * sin(angle);
+        glVertex2f(x, y + 4);
     }
-
     glEnd();
 
-    glColor3f(1.0f, 0.0f, 0.0f);
-    glBegin(GL_QUADS);
-    glVertex2f(centerX - radius, centerY + 10);
-    glVertex2f(centerX + radius, centerY + 10);
-    glVertex2f(centerX + radius / 2, centerY + 10 - 2 * radius);
-    glVertex2f(centerX - radius / 2, centerY + 10 - 2 * radius);
-    glEnd();
-    
+    // Triangle
     glColor3f(1.0f, 0.0f, 0.0f);
     glBegin(GL_TRIANGLES);
-    glVertex2f(centerX - radius / 2, centerY + 10 - 2 * radius);
-    glVertex2f(centerX, centerY + 10 - 3 * radius);
-    glVertex2f(centerX + radius / 2, centerY + 10 - 2 * radius);
+    glVertex2f(centerX, centerY - 15);
+    glVertex2f(centerX - 10, centerY + 4);
+    glVertex2f(centerX + 10, centerY + 4);
     glEnd();
+    
+    glPopMatrix();
 }
 
 void displayObstacles(float centerX, float centerY, float radius) {
+    
+    glPushMatrix();
+    glTranslatef(centerX, centerY, 0.0f);
+    glRotatef(ObstacleRotation, 0.0f, 0.0f, 1.0f);
+    glTranslatef(-centerX, -centerY, 0.0f);
+    
     glLineWidth(2.0);
 
     glColor3f(208 / 255.0, 160 / 255.0, 69 / 255.0);
@@ -972,6 +899,20 @@ void displayObstacles(float centerX, float centerY, float radius) {
     }
 
     glEnd();
+    
+    // Outline
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glLineWidth(1.0f);
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < numSegments; i++) {
+        float angle = i * 2 * 3.14159265 / numSegments;
+        float x = centerX + radius * cos(angle);
+        float y = centerY + radius * sin(angle);
+        glVertex2f(x, y);
+    }
+    glEnd();
+    
+    glPopMatrix();
 }
 
 void displayPowerUps(float centerX, float centerY, float radius) {
@@ -994,6 +935,11 @@ void displayPowerUps(float centerX, float centerY, float radius) {
 }
 
 void displayZaWarudo(float centerX, float centerY, float radius) {
+    glPushMatrix();
+    glTranslatef(centerX, centerY, 0.0f);
+    glRotatef(colRotation, 0.0f, 0.0f, 1.0f);
+    glTranslatef(-centerX, -centerY, 0.0f);
+    
     int numSegments = 100;
     // Circle
     glColor3f(162 / 255.0, 122 / 255.0, 145 / 255.0);
@@ -1006,53 +952,45 @@ void displayZaWarudo(float centerX, float centerY, float radius) {
     }
     glEnd();
     
+    // Outline
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glLineWidth(1.0f);
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < numSegments; i++) {
+        float angle = i * 2 * 3.14159265 / numSegments;
+        float x = centerX + radius * cos(angle);
+        float y = centerY + radius * sin(angle);
+        glVertex2f(x, y);
+    }
+    glEnd();
+    
     // Pause Icon
     glColor3f(1.0f, 1.0f, 1.0f);
     // Left rectangle
     glBegin(GL_QUADS);
-    glVertex2f(centerX - radius / 2.5, centerY - radius / 2.5);
-    glVertex2f(centerX - radius / 2.5, centerY + radius / 2.5);
-    glVertex2f(centerX - radius / 6, centerY + radius / 2.5);
-    glVertex2f(centerX - radius / 6, centerY - radius / 2.5);
+    glVertex2f(centerX - 8, centerY - 8); // right top
+    glVertex2f(centerX - 8, centerY + 8); // right bottom
+    glVertex2f(centerX - 3, centerY + 8); // left bottom
+    glVertex2f(centerX - 3, centerY - 8); // left top
     glEnd();
+    
     // Right rectangle
     glBegin(GL_QUADS);
-    glVertex2f(centerX + radius / 6, centerY - radius / 2.5);
-    glVertex2f(centerX + radius / 6, centerY + radius / 2.5);
-    glVertex2f(centerX + radius / 2.5, centerY + radius / 2.5);
-    glVertex2f(centerX + radius / 2.5, centerY - radius / 2.5);
+    glVertex2f(centerX + 3, centerY - 8);
+    glVertex2f(centerX + 3, centerY + 8);
+    glVertex2f(centerX + 8, centerY + 8);
+    glVertex2f(centerX + 8, centerY - 8);
     glEnd();
     
-    // Ring white
-    glColor3f(1.0f, 1.0f, 1.0f);
-    glBegin(GL_LINE_STRIP);
-    for (int i = 0; i < numSegments; i++) {
-        float angle = i * 2 * 3.14159265 / numSegments;
-        float x = centerX + (radius - 2) * cos(angle);
-        float y = centerY + (radius - 2) * sin(angle);
-        glVertex2f(x, y);
-    }
-    float xStart = centerX + (radius - 2) * cos(0);
-    float yStart = centerY + (radius - 2) * sin(0);
-    glVertex2f(xStart, yStart);
-    glEnd();
-    
-    // Ring yellow
-    glColor3f(1.0f, 0.9451f, 0.2667f);
-    glBegin(GL_LINE_LOOP);
-    for (int i = 0; i < numSegments; i++) {
-        float angle = i * 2 * 3.14159265 / numSegments;
-        float x = centerX + (radius - 5) * cos(angle);
-        float y = centerY + (radius - 5) * sin(angle);
-        glVertex2f(x, y);
-    }
-    xStart = centerX + (radius - 5) * cos(0);
-    yStart = centerY + (radius - 5) * sin(0);
-    glVertex2f(xStart, yStart);
-    glEnd();
+    glPopMatrix();
 }
 
 void displayDoubleScore(float centerX, float centerY, float radius) {
+    glPushMatrix();
+    glTranslatef(centerX, centerY, 0.0f);
+    glRotatef(colRotation, 0.0f, 0.0f, 1.0f);
+    glTranslatef(-centerX, -centerY, 0.0f);
+    
     glLineWidth(2.0);
 
     // Outline
@@ -1083,24 +1021,19 @@ void displayDoubleScore(float centerX, float centerY, float radius) {
     glVertex2f(centerX - width, centerY + height / 2 - 7.5);
     glVertex2f(centerX, centerY - height / 2 - 7.5);
     glEnd();
-
-    // Small Circles
-    glColor3f(1.0f, 0.0f, 0.0f);
-    int numCircles = 3;
-    float circleRadius = 1.0f;
-    for (int i = 0; i < numCircles; i++) {
-        float angle = i * 2 * 3.14159265 / numCircles;
-        float x = centerX + (radius - 15) * cos(angle);
-        float y = centerY + (radius - 15) * sin(angle);
-        glBegin(GL_POLYGON);
-        for (int j = 0; j < numSegments; j++) {
-            float circleAngle = j * 2 * 3.14159265 / numSegments;
-            float circleX = x + circleRadius * cos(circleAngle);
-            float circleY = y + circleRadius * sin(circleAngle);
-            glVertex2f(circleX, circleY);
-        }
-        glEnd();
+    
+    // Circle
+    glColor3f(1.0, 1.0, 1.0);
+    glBegin(GL_POLYGON);
+    for (int i = 0; i < numSegments; i++) {
+        float angle = i * 2 * 3.14159265 / numSegments;
+        float x = centerX + 2 * cos(angle);
+        float y = centerY - 2 * sin(angle);
+        glVertex2f(x, y - 5);
     }
+    glEnd();
+    
+    glPopMatrix();
 }
 
 void randomize() {
@@ -1166,6 +1099,9 @@ void randomize() {
 }
 
 void displayItems() {
+    for (const std::array<float, 2>& center : stars) {
+        drawStar(center[0], center[1]);
+    }
     for (const std::array<float, 2>& center : collectibles) {
         displayCollectible(center[0], center[1], 10.0);
     }
@@ -1184,7 +1120,6 @@ void displayItems() {
 void displayBoundaries() {
     glColor3f(0.0f, 0.0f, 0.0f);
     glLineWidth(1.5f);
-    
     
     // top
     glBegin(GL_LINES);
@@ -1230,22 +1165,39 @@ void displayBoundaries() {
 void Display() {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    displayBoundaries();
-    displayPlayer();
-    displayGoal();
-    displayStats();
     displayItems();
+    displayBoundaries();
+    if (score >= colCount) {
+        displayGoal();
+    }
+    displayStats();
+    displayPlayer();
     
     if (won) {
         gameRunning = false;
         goalReached();
         if (goalEffect) {
             goalEffect = false;
-            alSourceStop(sourceEffect);
-            {
-                std::lock_guard<std::mutex> lock(effectsMutex);
-                effect = 3;
+            Mix_HaltMusic();
+            Mix_Chunk* soundEffect = Mix_LoadWAV(audioFilesNames.at(7).c_str());
+            if (!soundEffect) {
+                std::cerr << "Sound effect not loaded" << std::endl;
             }
+
+            Mix_PlayChannel(2, soundEffect, 0);
+            Mix_Volume(2, 128);
+            
+            while (Mix_Playing(2) != 0) {
+                SDL_Delay(100);
+            }
+            
+            soundEffect = Mix_LoadWAV(audioFilesNames.at(3).c_str());
+            if (!soundEffect) {
+                std::cerr << "Sound effect not loaded" << std::endl;
+            }
+
+            Mix_PlayChannel(2, soundEffect, 0);
+            Mix_Volume(2, 128);
         }
     } else if (timeRemaining <= 0 && healthPoints > 0 && !won) {
         gameRunning = false;
@@ -1255,27 +1207,51 @@ void Display() {
         playerDied();
     }
     
-    if (!gameRunning && !once) {
-        bool FLAG = alIsSource(0);
-        std::cout << FLAG << std::endl;
-        alSourceStop(0);
-        std::cout << FLAG << std::endl;
-        alSourceStop(sourceEffect);
-        {
-            std::lock_guard<std::mutex> lock(effectsMutex);
-            music = 2;
+    if (!gameRunning && !once && !won) {
+        Mix_HaltMusic();
+        Mix_Music* audio = Mix_LoadMUS(audioFilesNames.at(2).c_str());
+        if (!audio) {
+            std::cerr << "Loading music failed" << std::endl;
         }
-        {
-            std::lock_guard<std::mutex> lock(effectsMutex);
-            effect = 2;
+        
+        Mix_VolumeMusic(20);
+        if (Mix_PlayMusic(audio, -1) == -1) {
+            std::cerr << "Playing music failed" << std::endl;
         }
-
+        
         once = true;
     }
 
-
     glutSwapBuffers();
     glFlush();
+}
+
+void anim() {
+    colRotation += direction * 5;
+    twinkleLength += direction2 * 0.5;
+    
+    if (colRotation == 45 || colRotation == -45) {
+        direction = -direction;
+    }
+    if (twinkleLength == 10 || twinkleLength == 16) {
+        direction2 = -direction2;
+    }
+    
+    ObstacleRotation += 80;
+    
+    if (earthRotation1 < 12.5) {
+        earthRotation1 += 0.1;
+    } else {
+        removed += 0.1;
+    }
+    
+    if (earthRotation2 < 8) {
+        earthRotation2 += 0.1;
+    } else {
+        removed2 += 0.1;
+    }
+    
+    glutPostRedisplay();
 }
 
 void specialKeys(int key, int x, int y) {
@@ -1295,11 +1271,14 @@ void specialKeys(int key, int x, int y) {
             } else {
                 objectX = leftBoundary + 24;
                 healthPoints --;
-//                alSourceStop(sourceEffect);
-//                {
-//                    std::lock_guard<std::mutex> lock(effectsMutex);
-//                    effect = 4;
-//                }
+                isTakingDamage = true;
+                Mix_Chunk* soundEffect = Mix_LoadWAV(audioFilesNames.at(4).c_str());
+                if (!soundEffect) {
+                    std::cerr << "Sound effect not loaded" << std::endl;
+                }
+
+                Mix_PlayChannel(2, soundEffect, 0);
+                Mix_Volume(2, 128);
             }
             break;
         case GLUT_KEY_RIGHT:
@@ -1309,11 +1288,14 @@ void specialKeys(int key, int x, int y) {
             } else {
                 objectX = rightBoundary - 24;
                 healthPoints --;
-//                alSourceStop(sourceEffect);
-//                {
-//                    std::lock_guard<std::mutex> lock(effectsMutex);
-//                    effect = 4;
-//                }
+                isTakingDamage = true;
+                Mix_Chunk* soundEffect = Mix_LoadWAV(audioFilesNames.at(4).c_str());
+                if (!soundEffect) {
+                    std::cerr << "Sound effect not loaded" << std::endl;
+                }
+
+                Mix_PlayChannel(2, soundEffect, 0);
+                Mix_Volume(2, 128);
             }
             break;
         case GLUT_KEY_UP:
@@ -1323,11 +1305,14 @@ void specialKeys(int key, int x, int y) {
             } else {
                 objectY = topBoundary + 24;
                 healthPoints --;
-//                alSourceStop(sourceEffect);
-//                {
-//                    std::lock_guard<std::mutex> lock(effectsMutex);
-//                    effect = 4;
-//                }
+                isTakingDamage = true;
+                Mix_Chunk* soundEffect = Mix_LoadWAV(audioFilesNames.at(4).c_str());
+                if (!soundEffect) {
+                    std::cerr << "Sound effect not loaded" << std::endl;
+                }
+
+                Mix_PlayChannel(2, soundEffect, 0);
+                Mix_Volume(2, 128);
             }
             break;
         case GLUT_KEY_DOWN:
@@ -1337,11 +1322,14 @@ void specialKeys(int key, int x, int y) {
             } else {
                 objectY = bottomBoundary - 24;
                 healthPoints --;
-//                alSourceStop(sourceEffect);
-//                {
-//                    std::lock_guard<std::mutex> lock(effectsMutex);
-//                    effect = 4;
-//                }
+                isTakingDamage = true;
+                Mix_Chunk* soundEffect = Mix_LoadWAV(audioFilesNames.at(4).c_str());
+                if (!soundEffect) {
+                    std::cerr << "Sound effect not loaded" << std::endl;
+                }
+
+                Mix_PlayChannel(2, soundEffect, 0);
+                Mix_Volume(2, 128);
             }
             break;
     }
@@ -1356,24 +1344,26 @@ int main(int argc, char** argr) {
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
     glutInitWindowSize(1000, 600);
     
-    if (!initializeOpenAL()) {
-        std::cerr << "Failed to initialize OpenAL" << std::endl;
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        std::cerr << "SDL Initialization error" << std::endl;
+            return 1;
+        }
+        
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        std::cerr << "SDL Mixer Initialization error" << std::endl;
         return 1;
     }
-    
-    std::thread musicThread(musicThreadFunc);
-    std::thread effectsThread(effectsThreadFunc);
 
     std::vector<std::string> audioFiles = {
-        "/assets/zawarudo.wav",
-        "/assets/giorno's_theme.wav",
-        "/assets/to_be_continued.wav",
-        "/assets/pillermen.wav",
+        "/assets/theworld.wav",
+        "/assets/fnaf.wav",
+        "/assets/tbc.wav",
+        "/assets/ger.wav",
         "/assets/hurt.wav",
         "/assets/col.wav",
+        "/assets/drinking.wav",
+        "/assets/mih.wav",
     };
-    
-    std::vector<std::string> audioFilesNames;
     
     for (int i = 0; i < audioFiles.size(); i++) {
         std::string path = __FILE__ + audioFiles.at(i);
@@ -1385,12 +1375,14 @@ int main(int argc, char** argr) {
         audioFilesNames.push_back(path);
     }
     
-    std::cout << "Audio files loaded successfully." << std::endl;
+    Mix_Music* audio = Mix_LoadMUS(audioFilesNames.at(1).c_str());
+    if (!audio) {
+        std::cerr << "Loading music failed" << std::endl;
+    }
     
-    if (loadAudioFilesToBuffers(audioFilesNames)) {
-        std::cout << "Audio files loaded successfully." << std::endl;
-    } else {
-        std::cerr << "Failed to load audio files." << std::endl;
+    Mix_VolumeMusic(5);
+    if (Mix_PlayMusic(audio, -1) == -1) {
+        std::cerr << "Playing music failed" << std::endl;
     }
     
     int screenWidth = glutGet(GLUT_SCREEN_WIDTH);
@@ -1401,25 +1393,22 @@ int main(int argc, char** argr) {
     glutInitWindowPosition(windowX, windowY);
 
     glutCreateWindow("Dio's Crusade");
-    {
-        std::lock_guard<std::mutex> lock(musicMutex);
-        music = 1;
-    }
     glutDisplayFunc(Display);
+    glutIdleFunc(anim);
     glutTimerFunc(1000, timer, 0);
 
     takenCenters.push_back({500,300});
     takenCenters.push_back({50,550});
     randomize();
+    randomizeStars();
     glutSpecialFunc(specialKeys);
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClearColor(0.90, 0.90, 0.90, 1.0);
     glPointSize(9.0);
     gluOrtho2D(0.0, 1000.0, 600.0, 0.0);
     glutMainLoop();
 
-    musicThread.join();
-    effectsThread.join();
-    cleanupOpenAL();
+    Mix_CloseAudio();
+    SDL_Quit();
     return 0;
 }
 
