@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		DE99FC3F2AD9BF41006E7AB1 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DE99FC3E2AD9BF41006E7AB1 /* main.cpp */; };
+		DE50F6592AE59F620044FDF7 /* P18-52-0792.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DE50F6572AE59F620044FDF7 /* P18-52-0792.cpp */; };
 		DE99FC472AD9C39D006E7AB1 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE99FC462AD9C39D006E7AB1 /* OpenGL.framework */; };
 		DE99FC492AD9C3A1006E7AB1 /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE99FC482AD9C3A1006E7AB1 /* GLUT.framework */; };
 		DE99FC4D2ADC4708006E7AB1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE99FC4C2ADC4708006E7AB1 /* Cocoa.framework */; };
@@ -26,17 +26,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		DE50F6422AE3E88F0044FDF7 /* drinking.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = drinking.wav; sourceTree = "<group>"; };
-		DE50F6432AE44B8E0044FDF7 /* ger.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = ger.wav; sourceTree = "<group>"; };
+		DE50F6572AE59F620044FDF7 /* P18-52-0792.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "P18-52-0792.cpp"; sourceTree = "<group>"; };
+		DE50F65A2AE59F890044FDF7 /* ger.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = ger.wav; sourceTree = "<group>"; };
+		DE50F65B2AE59F890044FDF7 /* mih.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = mih.wav; sourceTree = "<group>"; };
+		DE50F65C2AE59F890044FDF7 /* hurt.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = hurt.wav; sourceTree = "<group>"; };
+		DE50F65D2AE59F890044FDF7 /* drinking.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = drinking.wav; sourceTree = "<group>"; };
+		DE50F65E2AE59F8A0044FDF7 /* fnaf.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = fnaf.wav; sourceTree = "<group>"; };
+		DE50F65F2AE59F8A0044FDF7 /* col.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = col.wav; sourceTree = "<group>"; };
+		DE50F6602AE59F8A0044FDF7 /* theworld.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = theworld.wav; sourceTree = "<group>"; };
+		DE50F6612AE59F8A0044FDF7 /* tbc.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = tbc.wav; sourceTree = "<group>"; };
 		DE99FC3B2AD9BF41006E7AB1 /* Assignment1 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Assignment1; sourceTree = BUILT_PRODUCTS_DIR; };
-		DE99FC3E2AD9BF41006E7AB1 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		DE99FC462AD9C39D006E7AB1 /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
 		DE99FC482AD9C3A1006E7AB1 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
 		DE99FC4C2ADC4708006E7AB1 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
-		DE99FC9D2AE09CFF006E7AB1 /* theworld.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = theworld.wav; sourceTree = "<group>"; };
-		DEF69BE92AE283340057A919 /* tbc.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = tbc.wav; sourceTree = "<group>"; };
-		DEF69BEB2AE2AD140057A919 /* hurt.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = hurt.wav; sourceTree = "<group>"; };
-		DEF69BEC2AE2ADF30057A919 /* col.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = col.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -53,6 +55,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		DE50F6562AE59F4C0044FDF7 /* assets */ = {
+			isa = PBXGroup;
+			children = (
+				DE50F65F2AE59F8A0044FDF7 /* col.wav */,
+				DE50F65D2AE59F890044FDF7 /* drinking.wav */,
+				DE50F65E2AE59F8A0044FDF7 /* fnaf.wav */,
+				DE50F65A2AE59F890044FDF7 /* ger.wav */,
+				DE50F65C2AE59F890044FDF7 /* hurt.wav */,
+				DE50F65B2AE59F890044FDF7 /* mih.wav */,
+				DE50F6612AE59F8A0044FDF7 /* tbc.wav */,
+				DE50F6602AE59F8A0044FDF7 /* theworld.wav */,
+			);
+			path = assets;
+			sourceTree = "<group>";
+		};
 		DE99FC322AD9BF41006E7AB1 = {
 			isa = PBXGroup;
 			children = (
@@ -73,8 +90,8 @@
 		DE99FC3D2AD9BF41006E7AB1 /* Assignment1 */ = {
 			isa = PBXGroup;
 			children = (
-				DE99FC942AE08FBC006E7AB1 /* assets */,
-				DE99FC3E2AD9BF41006E7AB1 /* main.cpp */,
+				DE50F6562AE59F4C0044FDF7 /* assets */,
+				DE50F6572AE59F620044FDF7 /* P18-52-0792.cpp */,
 			);
 			path = Assignment1;
 			sourceTree = "<group>";
@@ -87,19 +104,6 @@
 				DE99FC462AD9C39D006E7AB1 /* OpenGL.framework */,
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		DE99FC942AE08FBC006E7AB1 /* assets */ = {
-			isa = PBXGroup;
-			children = (
-				DE50F6432AE44B8E0044FDF7 /* ger.wav */,
-				DE50F6422AE3E88F0044FDF7 /* drinking.wav */,
-				DEF69BEC2AE2ADF30057A919 /* col.wav */,
-				DEF69BEB2AE2AD140057A919 /* hurt.wav */,
-				DEF69BE92AE283340057A919 /* tbc.wav */,
-				DE99FC9D2AE09CFF006E7AB1 /* theworld.wav */,
-			);
-			path = assets;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -159,7 +163,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DE99FC3F2AD9BF41006E7AB1 /* main.cpp in Sources */,
+				DE50F6592AE59F620044FDF7 /* P18-52-0792.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

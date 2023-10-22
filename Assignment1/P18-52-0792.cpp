@@ -32,6 +32,7 @@ std::vector<std::array<float, 2>> collectibles;
 std::vector<std::array<float, 2>> obstacles;
 std::vector<std::array<float, 3>> powerUps;
 std::vector<std::array<float, 2>> stars;
+
 std::vector<std::string> audioFilesNames;
 
 int direction = 1;
@@ -73,6 +74,7 @@ void print(int x, int y, char* string);
 Time secondsToMinutesAndSeconds(int totalSeconds);
 void timer(int value);
 bool removeFloat2Array(std::vector<std::array<float, 2>>& vectorOfArrays, const std::array<float, 2>& targetArray);
+bool checkExists(std::vector<std::array<float, 2>>& vectorOfArrays, const std::array<float, 2>& targetArray);
 bool removeFloat3Array(std::vector<std::array<float, 3>>& vectorOfArrays, const std::array<float, 3>& targetArray);
 bool IsTaken(const std::array<float, 2>& centerToAdd);
 void goalReached();
@@ -87,6 +89,8 @@ void displayScore();
 void displayTime();
 void displayStats();
 void displayGoal();
+void drawStar(float xCenter, float yCenter);
+void randomizeStars();
 void displayPlayer();
 void displayCollectibles(float centerX, float centerY, float radius);
 void displayObstacles(float centerX, float centerY, float radius);
@@ -96,6 +100,8 @@ void displayDoubleScore(float centerX, float centerY, float radius);
 void randomize();
 void displayBoundaries();
 void Display();
+void specialKeys(int key, int x, int y);
+void anim();
 
 void print(int x, int y, char* string, int font) {
     int len, i;
@@ -1357,6 +1363,9 @@ void specialKeys(int key, int x, int y) {
                 Mix_Volume(2, 128);
             }
             break;
+        case 27:
+            exit(0);
+            break;
     }
     
     playerCollide();
@@ -1392,7 +1401,7 @@ int main(int argc, char** argr) {
     
     for (int i = 0; i < audioFiles.size(); i++) {
         std::string path = __FILE__ + audioFiles.at(i);
-        std::string substring = "main.cpp/";
+        std::string substring = "P18-52-0792.cpp/";
         size_t found = path.find(substring);
         if (found != std::string::npos) {
             path.erase(found, substring.length());
