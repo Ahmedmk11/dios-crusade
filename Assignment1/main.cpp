@@ -67,6 +67,7 @@ int fn = 1;
 float eyeColor = 0.0f;
 bool isTakingDamage = false;
 int damageDelay = 5;
+char lastKey;
 
 void print(int x, int y, char* string);
 Time secondsToMinutesAndSeconds(int totalSeconds);
@@ -155,6 +156,16 @@ bool removeFloat2Array(std::vector<std::array<float, 2>>& vectorOfArrays, const 
 
     if (it != vectorOfArrays.end()) {
         vectorOfArrays.erase(it);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool checkExists(std::vector<std::array<float, 2>>& vectorOfArrays, const std::array<float, 2>& targetArray) {
+    auto it = std::find(vectorOfArrays.begin(), vectorOfArrays.end(), targetArray);
+
+    if (it != vectorOfArrays.end()) {
         return true;
     } else {
         return false;
@@ -306,7 +317,7 @@ void playerCollide() {
         bool collisionY = itemBottomBoundary >= topBoundary && itemTopBoundary <= bottomBoundary;
         
         bool isColRemoved = false;
-        bool isObsRemoved = false;
+        bool isObstacleCollision = false;
         bool isPowRemoved = false;
 
         if (collisionX && collisionY) {
@@ -315,9 +326,9 @@ void playerCollide() {
             }
             isColRemoved = removeFloat2Array(collectibles, takenCenter);
             if (!isColRemoved) {
-                isObsRemoved = removeFloat2Array(obstacles, takenCenter);
+                isObstacleCollision = checkExists(obstacles, takenCenter);
             }
-            if (!isObsRemoved && !isColRemoved) {
+            if (!isObstacleCollision && !isColRemoved) {
                 for (int i = 0; i < powerUps.size(); i++) {
                     float x = powerUps.at(i)[0];
                     float y = powerUps.at(i)[1];
@@ -344,18 +355,28 @@ void playerCollide() {
 
                 Mix_PlayChannel(2, soundEffect, 0);
                 Mix_Volume(2, 128);
-            } else if (isObsRemoved) {
+            } else if (isObstacleCollision) {
                 healthPoints --;
+                if (lastKey == 'l') {
+                    objectX += 10;
+                } else if (lastKey == 'r') {
+                    objectX -= 10;
+                } else if (lastKey == 'u') {
+                    objectY += 10;
+                } else if (lastKey == 'd') {
+                    objectY -= 10;
+                }
                 isTakingDamage = true;
                 Mix_Chunk* soundEffect = Mix_LoadWAV(audioFilesNames.at(4).c_str());
                 if (!soundEffect) {
                     std::cerr << "Sound effect not loaded" << std::endl;
                 }
-
                 Mix_PlayChannel(2, soundEffect, 0);
                 Mix_Volume(2, 128);
             }
-            removeFloat2Array(takenCenters, takenCenter);
+            if (!isObstacleCollision) {
+                removeFloat2Array(takenCenters, takenCenter);
+            }
         }
     }
 }
@@ -1265,6 +1286,7 @@ void specialKeys(int key, int x, int y) {
 
     switch (key) {
         case GLUT_KEY_LEFT:
+            lastKey = 'l';
             if (objectX - step >= leftBoundary) {
                 playerRotation = 90.0f;
                 objectX -= step;
@@ -1282,6 +1304,7 @@ void specialKeys(int key, int x, int y) {
             }
             break;
         case GLUT_KEY_RIGHT:
+            lastKey = 'r';
             if (objectX + step <= rightBoundary) {
                 playerRotation = -90.0f;
                 objectX += step;
@@ -1299,6 +1322,7 @@ void specialKeys(int key, int x, int y) {
             }
             break;
         case GLUT_KEY_UP:
+            lastKey = 'u';
             if (objectY - step >= topBoundary) {
                 playerRotation = 180.0f;
                 objectY -= step;
@@ -1316,6 +1340,7 @@ void specialKeys(int key, int x, int y) {
             }
             break;
         case GLUT_KEY_DOWN:
+            lastKey = 'd';
             if (objectY + step <= bottomBoundary) {
                 playerRotation = 0.0f;
                 objectY += step;
